@@ -2,10 +2,20 @@
 
 A web app. Stack not chosen yet; update this file when it is.
 
-## Workflow
+## Default workflow (follow for every feature)
 
-- Use the Superpowers workflow (brainstorming → writing-plans → implementation → review).
-- **When a feature is complete and tests pass, run the `feature-wrapup` skill BEFORE `superpowers:finishing-a-development-branch`.** It writes end-user docs with screenshots and video, plus an architecture lesson with diagrams, and commits them on the branch.
+By default, build every feature with the Superpowers skills, in this order:
+
+1. **Design**: `superpowers:brainstorming` → design spec in `docs/superpowers/specs/`.
+2. **Plan**: `superpowers:writing-plans` → plan in `docs/superpowers/plans/`.
+3. **Build**: `superpowers:using-git-worktrees`, then `superpowers:subagent-driven-development` (or `superpowers:executing-plans`), with `superpowers:test-driven-development` for all code.
+4. **Review**: `superpowers:requesting-code-review`, then `superpowers:verification-before-completion`. Tests must pass.
+5. **Security review**: run `/security-review` on the branch's changes, then fix every high and medium finding before moving on. A finding you decide not to fix needs a one-line reason in the PR description.
+   - The **security-guidance** plugin (enabled in `.claude/settings.json`) also warns about insecure patterns *while* code is being written. It complements step 5 and does not replace it.
+6. **Document**: run the `feature-wrapup` skill. It writes end-user docs with screenshots and video, plus an architecture lesson with diagrams, and commits them on the branch.
+7. **Finish**: `superpowers:finishing-a-development-branch`.
+
+Skip a step only when your human partner says so. For a tiny change (typo, copy tweak), steps 1–2 can be a short design and steps 5–6 can be skipped. Say so explicitly.
 
 ## Documentation layout
 

@@ -14,7 +14,7 @@ Announce: "Using feature-wrapup to document this feature."
 - Feature name and a kebab-case slug (e.g. `invite-teammate`).
 - Current branch and base branch (usually `main`): `git rev-parse --abbrev-ref HEAD`.
 - The matching spec in `docs/superpowers/specs/`, if any.
-- Confirm tests pass. If they don't, stop. Documenting a broken feature produces misleading docs.
+- Confirm tests pass and the security review (CLAUDE.md step 5) is done. If either is missing, stop and do that first. Documenting a broken or insecure feature produces misleading docs.
 
 ## 2. Dispatch both agents in parallel
 
