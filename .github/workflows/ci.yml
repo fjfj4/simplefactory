@@ -1,0 +1,150 @@
+# CI for every pull request and every push to main.
+#
+# Design (see docs/architecture/0001-ci-single-required-check.md):
+# - Stack-agnostic: each job runs only when the files it needs exist, so this
+#   workflow is green today (no app yet) and picks up checks as the stack lands.
+# - One required check: branch protection requires only the "CI passed" job.
+#   Add or rename jobs freely; just list them under its `needs:`.
+# - Least privilege: read-only token, no secrets, never pull_request_target.
+# - Third-party actions are pinned to a full commit SHA; Dependabot bumps them.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      node: ${{ steps.files.outputs.node }}
+      e2e: ${{ steps.files.outputs.e2e }}
+      docs_capture: ${{ steps.files.outputs.docs_capture }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: files
+        name: Look for stack files
+        run: |
+          has() { if [ -e "$1" ]; then echo true; else echo false; fi; }
+          {
+            echo "node=$(has package.json)"
+            echo "e2e=$(has playwright.config.ts)"
+            echo "docs_capture=$(has playwright.docs.config.ts)"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  workflow-lint:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  node:
+    name: Lint, typecheck, unit tests
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: ${{ hashFiles('.nvmrc') != '' && '.nvmrc' || '' }}
+          node-version: ${{ hashFiles('.nvmrc') == '' && '22' || '' }}
+          cache: npm
+      - run: npm ci
+      # --if-present: a script that does not exist yet is skipped, not failed.
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - run: npm test --if-present
+
+  e2e:
+    name: E2E (Playwright)
+    needs: detect
+    if: needs.detect.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: ${{ hashFiles('.nvmrc') != '' && '.nvmrc' || '' }}
+          node-version: ${{ hashFiles('.nvmrc') == '' && '22' || '' }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  docs-capture:
+    name: Docs capture smoke (demo mode)
+    needs: detect
+    if: needs.detect.outputs.docs_capture == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: ${{ hashFiles('.nvmrc') != '' && '.nvmrc' || '' }}
+          node-version: ${{ hashFiles('.nvmrc') == '' && '22' || '' }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Proves `npm run dev:demo` boots and every capture script still runs.
+      # The media it writes is uploaded for review, never committed by CI.
+      - run: npx playwright test -c playwright.docs.config.ts
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs-media
+          path: docs/user-guide/media/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # The ONLY check branch protection requires. Skipped jobs count as passing
+  # (the stack isn't there yet); failed or cancelled jobs do not.
+  ci-passed:
+    name: CI passed
+    needs: [detect, workflow-lint, node, e2e, docs-capture]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "Job results: $RESULTS"
+          if echo "$RESULTS" | grep -Eq '"(failure|cancelled)"'; then
+            echo "::error::A required CI job failed or was cancelled."
+            exit 1
+          fi

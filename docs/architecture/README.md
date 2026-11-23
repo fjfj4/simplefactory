@@ -8,7 +8,7 @@ Reasons marked **_Inferred_** were not stated in a design spec. Treat them as hy
 
 | # | Decision | Status | Date |
 |---|---|---|---|
-| — | _None yet_ | | |
+| [0001](0001-ci-single-required-check.md) | Stack-agnostic CI behind one required check | Accepted | 2026-11-23 |
 
 ## Log
 
