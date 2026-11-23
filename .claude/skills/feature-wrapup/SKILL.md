@@ -39,7 +39,15 @@ git commit -m "docs(<slug>): user guide and architecture notes"
 
 Skip the video if it exceeds 5 MB, and say so.
 
-## 5. Report, then continue
+## 5. Draft the PR visuals
+
+Prepare the "See it" section of `.github/pull_request_template.md` from what the agents produced. Your human partner wants PRs to be as visual as possible.
+- Screenshots: absolute URLs `https://github.com/fjfj4/simplefactory/blob/<branch>/docs/user-guide/media/<feature>/<file>.png?raw=true`, plus a link to the video.
+- The main diagram from the architecture lesson, if one was written.
+- If the diff touches the schema or migrations, an `erDiagram` of the changed entities.
+Hand this to `finishing-a-development-branch` so it goes into the PR description.
+
+## 6. Report, then continue
 
 Tell your human partner in a few lines: the user-guide page path, the lesson path (or "no new decision"), any blockers, and any inferred reasons to confirm. Then continue with `superpowers:finishing-a-development-branch`.
 

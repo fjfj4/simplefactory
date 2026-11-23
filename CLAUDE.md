@@ -17,6 +17,18 @@ By default, build every feature with the Superpowers skills, in this order:
 
 Skip a step only when your human partner says so. For a tiny change (typo, copy tweak), steps 1–2 can be a short design and steps 5–6 can be skipped. Say so explicitly.
 
+## Pull requests: visual by default
+
+Every PR should let a reviewer *see* the change before reading code. Use `.github/pull_request_template.md` and include every visual that applies:
+
+- **UI change**: before/after screenshots and a link to the feature video, from `docs/user-guide/media/<feature>/`. In a PR description, reference images by absolute URL: `https://github.com/fjfj4/simplefactory/blob/<branch>/<path>?raw=true`.
+- **Behaviour or logic change**: a Mermaid `flowchart` or `sequenceDiagram` of the new path.
+- **Database change**: a Mermaid `erDiagram` of the changed entities (new fields marked), plus the migration path and whether it is reversible.
+- **Architecture decision**: link the lesson in `docs/architecture/` and paste its main diagram.
+- **State or lifecycle change**: a `stateDiagram-v2`.
+
+A PR with no visual at all needs a one-line reason (e.g. "dependency bump only"). Keep diagrams small, about 12 nodes at most, and label them with names from the code.
+
 ## Documentation layout
 
 - `docs/user-guide/` holds end-user help pages: task-focused, no jargon. Media lives in `docs/user-guide/media/<feature>/`.
