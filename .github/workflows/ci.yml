@@ -1,6 +1,6 @@
 # CI for every pull request and every push to main.
 #
-# Design (see docs/architecture/ci-pipeline.md):
+# Design (see docs/architecture/0001-ci-single-required-check.md):
 # - Stack-agnostic: each job runs only when the files it needs exist, so this
 #   workflow is green today (no app yet) and picks up checks as the stack lands.
 # - One required check: branch protection requires only the "CI passed" job.
