@@ -29,6 +29,13 @@ Every PR should let a reviewer *see* the change before reading code. Use `.githu
 
 A PR with no visual at all needs a one-line reason (e.g. "dependency bump only"). Keep diagrams small, about 12 nodes at most, and label them with names from the code.
 
+## CI and branch protection
+
+- `.github/workflows/ci.yml` runs on every PR and on push to `main`. Jobs switch on when their files exist: `package.json` (npm `lint`, `typecheck`, `test` scripts), `playwright.config.ts` (E2E), `playwright.docs.config.ts` (doc capture smoke in demo mode).
+- `main` requires the single check **`CI passed`**. Add new CI jobs to its `needs:` list; never require individual jobs in branch protection. Why: `docs/architecture/0001-ci-single-required-check.md`.
+- Pin third-party actions to a full commit SHA with a `# vX.Y.Z` comment; Dependabot bumps them. Keep `permissions: contents: read` and never use `pull_request_target`.
+- When the stack lands: drop `--if-present` from the CI scripts and add an `npm` entry to `.github/dependabot.yml`.
+
 ## Documentation layout
 
 - `docs/user-guide/` holds end-user help pages: task-focused, no jargon. Media lives in `docs/user-guide/media/<feature>/`.
